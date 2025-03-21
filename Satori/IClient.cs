@@ -40,19 +40,9 @@ namespace Satori
         RetryConfiguration GlobalRetryConfiguration { get; set; }
 
         /// <summary>
-        /// The host address of the server.
+        /// The server URI containing the scheme, host and port.
         /// </summary>
-        string Host { get; }
-
-        /// <summary>
-        /// The port number of the server.
-        /// </summary>
-        int Port { get; }
-
-        /// <summary>
-        /// The protocol scheme used to connect with the server. Must be either "http" or "https".
-        /// </summary>
-        string Scheme { get; }
+        Uri ServerUri { get; }
 
         /// <summary>
         /// Set the timeout in seconds on requests sent to the server.
@@ -315,7 +305,7 @@ namespace Satori
         /// <returns>A task object.</returns>
         public Task DeleteMessageAsync(ISession session, string id, CancellationToken? cancellationToken = default,
             RetryConfiguration retryConfiguration = null);
-        
+
         /// <summary>
         /// Get all available flags and their value overrides for this identity.
         /// </summary>

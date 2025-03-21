@@ -25,7 +25,7 @@ namespace Satori.Tests
         public const int TimeoutMilliseconds = 5000;
 
         private readonly Client _testClient =
-            new Client("http", "localhost", 7450, ApiKey, HttpRequestAdapter.WithGzip());
+            new Client(new Uri("http://localhost:7450"), ApiKey, HttpRequestAdapter.WithGzip());
 
         [Fact(Timeout = TimeoutMilliseconds)]
         public async Task TestAuthenticateAndLogout()

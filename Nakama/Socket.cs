@@ -117,7 +117,7 @@ namespace Nakama
         /// <summary>
         /// A new socket with default options.
         /// </summary>
-        public Socket() : this(Client.DefaultScheme, Client.DefaultHost, Client.DefaultPort, new WebSocketStdlibAdapter())
+        public Socket() : this(new Uri($"{Client.DefaultScheme}://{Client.DefaultHost}:{Client.DefaultPort}"), new WebSocketStdlibAdapter())
         {
         }
 
@@ -125,24 +125,21 @@ namespace Nakama
         /// A new socket with an adapter.
         /// </summary>
         /// <param name="adapter">The adapter for use with the socket.</param>
-        public Socket(ISocketAdapter adapter) : this(Client.DefaultScheme, Client.DefaultHost, Client.DefaultPort,
-            adapter)
+        public Socket(ISocketAdapter adapter) : this(new Uri($"{Client.DefaultScheme}://{Client.DefaultHost}:{Client.DefaultPort}"), adapter)
         {
         }
 
         /// <summary>
         /// A new socket with server connection and adapter options.
         /// </summary>
-        /// <param name="scheme">The protocol scheme. Must be "ws" or "wss".</param>
-        /// <param name="host">The host address of the server.</param>
-        /// <param name="port">The port number of the server.</param>
+        /// <param name="uri">The server URI.</param>
         /// <param name="adapter">The adapter for use with the socket.</param>
         /// <param name="sendTimeoutSec">The maximum time allowed for a message to be sent.</param>
-        public Socket(string scheme, string host, int port, ISocketAdapter adapter, int sendTimeoutSec = DefaultSendTimeout)
+        public Socket(Uri uri, ISocketAdapter adapter, int sendTimeoutSec = DefaultSendTimeout)
         {
             Logger = NullLogger.Instance;
             _adapter = adapter;
-            _baseUri = new UriBuilder(scheme, host, port).Uri;
+            _baseUri = uri;
             _responses = new Dictionary<string, TaskCompletionSource<WebSocketMessageEnvelope>>();
             _sendTimeoutSec = TimeSpan.FromSeconds(sendTimeoutSec);
 
@@ -252,11 +249,16 @@ namespace Nakama
 
         /// <inheritdoc cref="ConnectAsync"/>
         public Task ConnectAsync(ISession session, bool appearOnline = false,
-            int connectTimeoutSec = DefaultConnectTimeout, string langTag = "en")
+            int connectTimeoutSec = DefaultConnectTimeout, string langTag = "en", string path = "ws")
         {
+            var basePath = _baseUri.AbsolutePath;
+            var newPath = path.StartsWith("/")
+                ? path
+                : $"{basePath}{(basePath.EndsWith("/") ? "" : "/")}{path}";
+
             var uri = new UriBuilder(_baseUri)
             {
-                Path = "/ws",
+                Path = newPath,
                 Query = $"lang={langTag}&status={appearOnline}&token={session.AuthToken}"
             }.Uri;
             return _adapter.ConnectAsync(uri, connectTimeoutSec);
@@ -785,8 +787,9 @@ namespace Nakama
         /// <returns>A new socket with connection settings from the client.</returns>
         public static ISocket From(IClient client, ISocketAdapter adapter)
         {
-            var scheme = client.Scheme.ToLower().Equals("http") ? "ws" : "wss";
-            return new Socket(scheme, client.Host, client.Port, adapter) { Logger = client.Logger };
+            var scheme = client.ServerUri.Scheme.ToLower().Equals("http") ? "ws" : "wss";
+            var wsUri = new Uri($"{scheme}://{client.ServerUri.Host}:{client.ServerUri.Port}{client.ServerUri.PathAndQuery}");
+            return new Socket(wsUri, adapter) { Logger = client.Logger };
         }
 
         private void ProcessMessage(ArraySegment<byte> buffer)
@@ -927,7 +930,8 @@ namespace Nakama
             {
                 _responses[envelope.Cid] = completer;
             }
-            cts.Token.Register(() => {
+            cts.Token.Register(() =>
+            {
                 lock (_responsesLock)
                 {
                     if (_responses.ContainsKey(envelope.Cid))

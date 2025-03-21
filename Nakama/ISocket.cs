@@ -186,7 +186,7 @@ namespace Nakama
         /// <param name="langTag">The language tag of the user on the connected socket.</param>
         /// <returns>A task to represent the asynchronous operation.</returns>
         Task ConnectAsync(ISession session, bool appearOnline = false,
-            int connectTimeout = Socket.DefaultConnectTimeout, string langTag = "en");
+            int connectTimeout = Socket.DefaultConnectTimeout, string langTag = "en", string path = "ws");
 
         /// <summary>
         /// Create a multiplayer match on the server.

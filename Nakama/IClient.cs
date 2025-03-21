@@ -35,19 +35,9 @@ namespace Nakama
         RetryConfiguration GlobalRetryConfiguration { get; set; }
 
         /// <summary>
-        /// The host address of the server. Defaults to "127.0.0.1".
+        /// The server URI containing the scheme, host and port.
         /// </summary>
-        string Host { get; }
-
-        /// <summary>
-        /// The port number of the server. Defaults to 7350.
-        /// </summary>
-        int Port { get; }
-
-        /// <summary>
-        /// The protocol scheme used to connect with the server. Must be either "http" or "https".
-        /// </summary>
-        string Scheme { get; }
+        Uri ServerUri { get; }
 
         /// <summary>
         /// The key used to authenticate with the server without a session. Defaults to "defaultkey".
@@ -1100,5 +1090,5 @@ namespace Nakama
         /// <returns>A task which resolves to the tournament record object written.</returns>
         Task<IApiLeaderboardRecord> WriteTournamentRecordAsync(ISession session, string tournamentId, long score,
             long subScore = 0L, string metadata = null, ApiOperator apiOperator = ApiOperator.NO_OVERRIDE, RetryConfiguration retryConfiguration = null, CancellationToken canceller = default);
-	}
+    }
 }

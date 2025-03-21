@@ -40,14 +40,8 @@ namespace Satori
             listener: null,
             maxRetries: 4);
 
-        /// <inheritdoc cref="IClient.Host"/>
-        public string Host { get; }
-
-        /// <inheritdoc cref="IClient.Port"/>
-        public int Port { get; }
-
-        /// <inheritdoc cref="IClient.Scheme"/>
-        public string Scheme { get; }
+        /// <inheritdoc cref="IClient.ServerUri"/>
+        public Uri ServerUri { get; }
 
         /// <inheritdoc cref="IClient.ReceivedSessionUpdated"/>
         public event Action<ISession> ReceivedSessionUpdated;
@@ -75,12 +69,20 @@ namespace Satori
         public Client(string scheme, string host, int port, string apiKey, IHttpAdapter adapter,
             bool autoRefreshSession = true)
         {
-            Host = host;
-            Port = port;
-            Scheme = scheme;
+            ServerUri = new UriBuilder(scheme, host, port).Uri;
             ApiKey = apiKey;
             AutoRefreshSession = autoRefreshSession;
-            _apiClient = new ApiClient(new UriBuilder(scheme, host, port).Uri, adapter, DefaultTimeout);
+            _apiClient = new ApiClient(ServerUri, adapter, DefaultTimeout);
+            _retryInvoker = new RetryInvoker(adapter.TransientExceptionDelegate);
+        }
+
+        public Client(Uri uri, string apiKey, IHttpAdapter adapter = null, bool autoRefreshSession = true)
+        {
+            ServerUri = uri;
+            ApiKey = apiKey;
+            AutoRefreshSession = autoRefreshSession;
+            adapter = adapter ?? HttpRequestAdapter.WithGzip();
+            _apiClient = new ApiClient(ServerUri, adapter, DefaultTimeout);
             _retryInvoker = new RetryInvoker(adapter.TransientExceptionDelegate);
         }
 
@@ -201,14 +203,14 @@ namespace Satori
             catch (ArgumentException)
             {
                 return Task.FromResult<IApiFlag>(new ApiFlag
-                    { Name = name, Value = defaultValue, ConditionChanged = false });
+                { Name = name, Value = defaultValue, ConditionChanged = false });
             }
             catch (ApiResponseException e)
             {
                 if (_apiClient.HttpAdapter.TransientExceptionDelegate.Invoke(e))
                 {
                     return Task.FromResult<IApiFlag>(new ApiFlag
-                        { Name = name, Value = defaultValue, ConditionChanged = false });
+                    { Name = name, Value = defaultValue, ConditionChanged = false });
                 }
 
                 throw;
@@ -242,14 +244,14 @@ namespace Satori
             catch (ArgumentException)
             {
                 return Task.FromResult<IApiFlag>(new ApiFlag
-                    { Name = name, Value = defaultValue, ConditionChanged = false });
+                { Name = name, Value = defaultValue, ConditionChanged = false });
             }
             catch (ApiResponseException e)
             {
                 if (_apiClient.HttpAdapter.TransientExceptionDelegate.Invoke(e))
                 {
                     return Task.FromResult<IApiFlag>(new ApiFlag
-                        { Name = name, Value = defaultValue, ConditionChanged = false });
+                    { Name = name, Value = defaultValue, ConditionChanged = false });
                 }
 
                 throw;

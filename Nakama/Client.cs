@@ -52,8 +52,8 @@ namespace Nakama
             listener: null,
             maxRetries: 4);
 
-        /// <inheritdoc cref="IClient.Host"/>
-        public string Host { get; }
+        /// <inheritdoc cref="IClient.ServerUri"/>
+        public Uri ServerUri { get; }
 
         /// <summary>
         /// The logger to use with the client.
@@ -67,12 +67,6 @@ namespace Nakama
                 _logger = value;
             }
         }
-
-        /// <inheritdoc cref="IClient.Port"/>
-        public int Port { get; }
-
-        /// <inheritdoc cref="IClient.Scheme"/>
-        public string Scheme { get; }
 
         /// <inheritdoc cref="IClient.ServerKey"/>
         public string ServerKey { get; }
@@ -113,11 +107,9 @@ namespace Nakama
             bool autoRefreshSession = true)
         {
             AutoRefreshSession = autoRefreshSession;
-            Host = host;
-            Port = port;
-            Scheme = scheme;
+            ServerUri = new UriBuilder(scheme, host, port).Uri;
             ServerKey = serverKey;
-            _apiClient = new ApiClient(new UriBuilder(scheme, host, port).Uri, adapter, DefaultTimeout);
+            _apiClient = new ApiClient(ServerUri, adapter, DefaultTimeout);
             Logger = NullLogger.Instance; // must set logger last.
 
             _retryInvoker = new RetryInvoker(adapter.TransientExceptionDelegate);
@@ -131,11 +123,9 @@ namespace Nakama
         public Client(Uri uri, string serverKey, IHttpAdapter adapter, bool autoRefreshSession = true)
         {
             AutoRefreshSession = autoRefreshSession;
-            Host = uri.Host;
-            Port = uri.Port;
-            Scheme = uri.Scheme;
+            ServerUri = uri;
             ServerKey = serverKey;
-            _apiClient = new ApiClient(uri, adapter, DefaultTimeout);
+            _apiClient = new ApiClient(ServerUri, adapter, DefaultTimeout);
             Logger = NullLogger.Instance; // must set logger last.
 
             _retryInvoker = new RetryInvoker(adapter.TransientExceptionDelegate);
@@ -1256,8 +1246,9 @@ namespace Nakama
             return newSession;
         }
 
+        /// <inheritdoc cref="ToString"/>
         public override string ToString() =>
-            $"Client(Host='{Host}', Port={Port}, Scheme='{Scheme}', ServerKey='{ServerKey}', Timeout={Timeout})";
+            $"Client(Uri='{ServerUri}', ServerKey='{ServerKey}', Timeout={Timeout})";
 
         /// <inheritdoc cref="UnlinkAppleAsync"/>
         public async Task UnlinkAppleAsync(ISession session, string token, RetryConfiguration retryConfiguration = null,

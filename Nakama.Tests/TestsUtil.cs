@@ -13,6 +13,7 @@
 // limitations under the License.
 
 using Microsoft.Extensions.Configuration;
+using System;
 
 namespace Nakama.Tests
 {
@@ -37,7 +38,8 @@ namespace Nakama.Tests
         {
             var settings = new ConfigurationBuilder().AddJsonFile(path).Build();
             var port = System.Convert.ToInt32(settings["PORT"]);
-            var client = new Client(settings["SCHEME"], settings["HOST"], port, settings["SERVER_KEY"], adapter);
+            var uri = new Uri($"{settings["SCHEME"]}://{settings["HOST"]}:{port}");
+            var client = new Client(uri, settings["SERVER_KEY"], adapter);
             if (System.Convert.ToBoolean(settings["STDOUT"]))
             {
                 client.Logger = new StdoutLogger();
